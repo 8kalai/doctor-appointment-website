@@ -94,27 +94,30 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-// Use your backend URL directly
 const BASE_URL = "http://localhost:4000";
 
 const Login = () => {
   const { token, setToken } = useContext(AppContext);
   const navigate = useNavigate();
 
-  const [state, setState] = useState("Sign Up"); // Sign Up or Login
+  const [state, setState] = useState("Login"); // Default: Login form
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const API_URL = BASE_URL;
+  const resetFields = () => {
+    setName("");
+    setEmail("");
+    setPassword("");
+  };
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
     try {
       if (state === "Sign Up") {
-        // Sign Up request
-        const { data } = await axios.post(`${API_URL}/api/user/register`, {
+        // Register user
+        const { data } = await axios.post(`${BASE_URL}/api/user/register`, {
           name,
           email,
           password,
@@ -124,12 +127,13 @@ const Login = () => {
           toast.success("Account created successfully!");
           localStorage.setItem("token", data.token);
           setToken(data.token);
+          navigate("/");
         } else {
           toast.error(data.message || "Signup failed");
         }
       } else {
-        // Login request
-        const { data } = await axios.post(`${API_URL}/api/user/login`, {
+        // Login user
+        const { data } = await axios.post(`${BASE_URL}/api/user/login`, {
           email,
           password,
         });
@@ -138,37 +142,40 @@ const Login = () => {
           toast.success("Login successful!");
           localStorage.setItem("token", data.token);
           setToken(data.token);
+          navigate("/");
         } else {
           toast.error(data.message || "Login failed");
         }
       }
     } catch (error) {
-      // Better network error handling
       if (!error.response) {
-        toast.error("Network error: Cannot connect to backend on port 4000");
+        toast.error("Network error: Cannot connect to backend (port 4000)");
       } else {
         toast.error(error.response.data.message || "Something went wrong");
       }
     }
   };
 
-  // Redirect if already logged in
+  // ✅ Only navigate if the token exists AND user is not already on this page
   useEffect(() => {
-    if (token) navigate("/");
-  }, [token, navigate]);
+    const savedToken = localStorage.getItem("token");
+    if (savedToken && !token) {
+      setToken(savedToken);
+      navigate("/"); // Redirect only if logged in
+    }
+  }, [token, setToken, navigate]);
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center">
+    <div className="min-h-[80vh] flex items-center justify-center bg-gray-100">
       <form
         onSubmit={onSubmitHandler}
-        className="flex flex-col gap-3 m-auto items-start p-8 min-w-[340px] sm:min-w-96 border rounded-xl text-zinc-600 text-sm shadow-lg"
+        className="flex flex-col gap-3 m-auto items-start p-8 min-w-[340px] sm:min-w-96 border rounded-xl text-zinc-600 text-sm shadow-lg bg-white"
       >
-        <p className="text-2xl font-semibold">
+        <p className="text-2xl font-semibold mb-1">
           {state === "Sign Up" ? "Create Account" : "Login"}
         </p>
-        <p>
-          Please {state === "Sign Up" ? "sign up" : "log in"} to book an
-          appointment
+        <p className="text-gray-500 mb-3">
+          Please {state === "Sign Up" ? "sign up" : "log in"} to continue.
         </p>
 
         {state === "Sign Up" && (
@@ -211,29 +218,36 @@ const Login = () => {
 
         <button
           type="submit"
-          className="bg-primary text-white w-full py-2 rounded-md text-base mt-2 hover:bg-blue-600 transition-all"
+          className="bg-blue-600 text-white w-full py-2 rounded-md text-base mt-3 hover:bg-blue-700 transition-all"
         >
           {state === "Sign Up" ? "Create Account" : "Login"}
         </button>
 
+        {/* --- THIS SECTION Toggles the view between Login and Sign Up --- */}
         {state === "Sign Up" ? (
-          <p className="mt-2 text-sm">
+          <p className="mt-2 text-sm text-center w-full">
             Already have an account?{" "}
             <span
-              onClick={() => setState("Login")}
-              className="text-primary underline cursor-pointer"
+              onClick={() => {
+                setState("Login");
+                resetFields();
+              }}
+              className="text-blue-600 underline cursor-pointer"
             >
               Login here
             </span>
           </p>
         ) : (
-          <p className="mt-2 text-sm">
-            Don't have an account?{" "}
+          <p className="mt-2 text-sm text-center w-full">
+            Don’t have an account?{" "}
             <span
-              onClick={() => setState("Sign Up")}
-              className="text-primary underline cursor-pointer"
+              onClick={() => {
+                setState("Sign Up");
+                resetFields();
+              }}
+              className="text-blue-600 underline cursor-pointer"
             >
-              Create one
+              Create Account
             </span>
           </p>
         )}
@@ -243,5 +257,3 @@ const Login = () => {
 };
 
 export default Login;
-
-
